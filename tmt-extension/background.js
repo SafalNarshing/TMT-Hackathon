@@ -5,9 +5,55 @@ const API_URL = "https://tmt.ilprl.ku.edu.np/lang-translate";
 
 // ── Create context menu on install ─────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
+  // Parent menu
   chrome.contextMenus.create({
     id: "tmt-translate-selection",
-    title: "Translate with TMT",
+    title: "Translate with TMT →",
+    contexts: ["selection"]
+  });
+
+  // English → Other languages
+  chrome.contextMenus.create({
+    id: "tmt-en-ne",
+    parentId: "tmt-translate-selection",
+    title: "English → Nepali (नेपाली)",
+    contexts: ["selection"]
+  });
+
+  chrome.contextMenus.create({
+    id: "tmt-en-tmg",
+    parentId: "tmt-translate-selection",
+    title: "English → Tamang (तामाङ)",
+    contexts: ["selection"]
+  });
+
+  // Nepali → Other languages
+  chrome.contextMenus.create({
+    id: "tmt-ne-en",
+    parentId: "tmt-translate-selection",
+    title: "Nepali (नेपाली) → English",
+    contexts: ["selection"]
+  });
+
+  chrome.contextMenus.create({
+    id: "tmt-ne-tmg",
+    parentId: "tmt-translate-selection",
+    title: "Nepali (नेपाली) → Tamang (तामाङ)",
+    contexts: ["selection"]
+  });
+
+  // Tamang → Other languages
+  chrome.contextMenus.create({
+    id: "tmt-tmg-en",
+    parentId: "tmt-translate-selection",
+    title: "Tamang (तामाङ) → English",
+    contexts: ["selection"]
+  });
+
+  chrome.contextMenus.create({
+    id: "tmt-tmg-ne",
+    parentId: "tmt-translate-selection",
+    title: "Tamang (तामाङ) → Nepali (नेपाली)",
     contexts: ["selection"]
   });
 });
@@ -24,15 +70,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // ── Handle context menu click ───────────────────────────────
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId !== "tmt-translate-selection") return;
+  // Language combination map: menuId -> { src, tgt }
+  const langMap = {
+    "tmt-en-ne": { src: "en", tgt: "ne" },
+    "tmt-en-tmg": { src: "en", tgt: "tmg" },
+    "tmt-ne-en": { src: "ne", tgt: "en" },
+    "tmt-ne-tmg": { src: "ne", tgt: "tmg" },
+    "tmt-tmg-en": { src: "tmg", tgt: "en" },
+    "tmt-tmg-ne": { src: "tmg", tgt: "ne" }
+  };
+
+  if (!langMap[info.menuItemId]) return;
 
   const selectedText = info.selectionText?.trim();
   if (!selectedText) return;
 
-  // Get saved API key and language preferences
-  const { apiKey, srcLang, tgtLang } = await chrome.storage.local.get([
-    "apiKey", "srcLang", "tgtLang"
-  ]);
+  // Get saved API key
+  const { apiKey } = await chrome.storage.local.get("apiKey");
 
   if (!apiKey) {
     chrome.scripting.executeScript({
@@ -43,10 +97,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
-  const src = srcLang || "en";
-  const tgt = tgtLang || "ne";
-
-  if (src === tgt) return;
+  const { src, tgt } = langMap[info.menuItemId];
 
   try {
     const response = await fetch(API_URL, {
@@ -72,6 +123,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
   } catch (err) {
     console.error("TMT background translation error:", err);
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (msg) => alert(msg),
+      args: [`Translation error: ${err.message}`]
+    });
   }
 });
 

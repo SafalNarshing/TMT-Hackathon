@@ -20,6 +20,19 @@
       --radius:    8px;
     }
 
+    /* ── Light Theme ── */
+    body.light-theme {
+      --bg:        #ffffff;
+      --surface:   #f6f8fa;
+      --border:    #d0d7de;
+      --accent:    #0969da;
+      --accent2:   #9e6a03;
+      --text:      #24292f;
+      --muted:     #656d76;
+      --success:   #1a7f37;
+      --error:     #da3633;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -61,6 +74,38 @@
     }
     .settings-btn:hover {
       color: var(--accent);
+    }
+    .theme-toggle-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .theme-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      padding: 6px 8px;
+      border-radius: 6px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+    }
+    .theme-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .theme-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     .logo {
       width: 32px; height: 32px;
@@ -412,7 +457,15 @@
         <span>Google TMT Hackathon 2026</span>
       </div>
     </div>
-    <button class="settings-btn" id="settingsBtn" title="Settings">⚙️</button>
+    <div class="theme-toggle-group">
+      <button class="theme-btn" id="themeToggle" title="Toggle Theme">
+        <svg id="themeIcon" viewBox="0 0 24 24">
+          <!-- Moon icon (shown in dark theme, click to switch to light) -->
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <button class="settings-btn" id="settingsBtn" title="Settings">⚙️</button>
+    </div>
   </div>
 
   <!-- Language Selection -->
@@ -435,9 +488,9 @@
 
   <!-- Tab Navigation -->
   <div class="tab-nav">
-    <button class="tab-btn active" data-tab="custom" id="tabCustom">✏️ Custom Text</button>
-    <button class="tab-btn" data-tab="selected" id="tabSelected">📋 Selected Text</button>
-    <button class="tab-btn" data-tab="fullpage" id="tabFullpage">🌐 Full Page</button>
+    <button class="tab-btn active" data-tab="custom" id="tabCustom">Custom Text</button>
+    <button class="tab-btn" data-tab="selected" id="tabSelected">Selected Text</button>
+    <button class="tab-btn" data-tab="fullpage" id="tabFullpage">Full Page</button>
   </div>
 
   <!-- Tab 1: Custom Text -->
