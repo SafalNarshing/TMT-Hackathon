@@ -38,7 +38,29 @@
       padding: 14px 16px 12px;
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 10px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+    .settings-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .settings-btn:hover {
+      color: var(--accent);
     }
     .logo {
       width: 32px; height: 32px;
@@ -223,27 +245,174 @@
       padding: 2px 5px;
       color: var(--text);
     }
+
+    /* ── Settings Modal ── */
+    .settings-modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .settings-modal.active {
+      display: flex;
+    }
+    .settings-modal-content {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      width: 85%;
+      max-width: 320px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+    .settings-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .settings-modal-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .settings-modal-close {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+    }
+    .settings-modal-close:hover {
+      color: var(--accent);
+    }
+    .settings-modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .settings-modal-body .label {
+      margin-bottom: 2px;
+    }
+    .settings-modal-body .key-row {
+      flex-direction: column;
+      gap: 8px;
+    }
+    .settings-modal-body .key-input {
+      width: 100%;
+    }
+    .settings-modal-body .btn {
+      width: 100%;
+    }
+    .key-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 8px;
+      transition: border-color 0.2s;
+    }
+    .key-input-wrapper:focus-within {
+      border-color: var(--accent);
+    }
+    .key-input-wrapper .key-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 8px 2px;
+    }
+    .key-input-wrapper .key-input:focus {
+      outline: none;
+    }
+    .eye-toggle {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px 0;
+      transition: color 0.15s;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+    }
+    .eye-toggle:hover {
+      color: var(--accent);
+    }
+    .eye-toggle svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ── Tab Navigation ── */
+    .tab-nav {
+      display: flex;
+      gap: 0;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 12px 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
 
   <!-- Header -->
   <div class="header">
-    <div class="logo">TMT</div>
-    <div class="header-text">
-      <h1>TMT Translator</h1>
-      <span>Google TMT Hackathon 2026</span>
+    <div class="header-left">
+      <div class="logo">TMT</div>
+      <div class="header-text">
+        <h1>TMT Translator</h1>
+        <span>Google TMT Hackathon 2026</span>
+      </div>
     </div>
-  </div>
-
-  <!-- API Key -->
-  <div class="section">
-    <div class="label">API Key</div>
-    <div class="key-row">
-      <input class="key-input" id="apiKey" type="password" placeholder="team_xxxxxxxxxxxxxxxx" />
-      <button class="btn btn-primary" id="saveKey">Save</button>
-    </div>
-    <div class="key-status" id="keyStatus"></div>
+    <button class="settings-btn" id="settingsBtn" title="Settings">⚙️</button>
   </div>
 
   <!-- Language Selection -->
@@ -264,35 +433,66 @@
     </div>
   </div>
 
-  <!-- Manual Translation -->
-  <div class="section">
-    <div class="label">Translate Text</div>
-    <textarea class="translate-area" id="inputText" placeholder="Type or paste text to translate..."></textarea>
-    <div class="translate-btn-row">
-      <button class="btn btn-primary" id="translateBtn">Translate</button>
-      <button class="btn btn-ghost" id="clearBtn">Clear</button>
-    </div>
-
-    <div style="margin-top: 12px;">
-      <div class="label">Output</div>
-      <div class="output-box" id="outputBox">Translation will appear here.</div>
-      <div class="output-meta" id="outputMeta"></div>
-    </div>
-
-    <button class="btn btn-ghost copy-btn" id="copyBtn" style="display:none;">Copy Translation</button>
+  <!-- Tab Navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="custom" id="tabCustom">✏️ Custom Text</button>
+    <button class="tab-btn" data-tab="selected" id="tabSelected">📋 Selected Text</button>
+    <button class="tab-btn" data-tab="fullpage" id="tabFullpage">🌐 Full Page</button>
   </div>
 
-  <!-- Page Translation -->
-  <div class="section">
-    <div class="label">Translate This Page</div>
-    <p class="page-translate-info">
-      Selects all visible text on the current page and translates it using your chosen direction.
-      <strong>Use carefully on large pages.</strong>
-    </p>
-    <button class="btn btn-ghost" id="translatePageBtn" style="width:100%">
-      🌐 Translate Page
-    </button>
-    <div id="pageStatus" style="margin-top:8px; font-size:11px; color: var(--muted);"></div>
+  <!-- Tab 1: Custom Text -->
+  <div class="tab-content active" id="tab-custom">
+    <div class="section">
+      <div class="label">Type your text</div>
+      <textarea class="translate-area" id="inputText" placeholder="Type or paste text to translate..."></textarea>
+      <div class="translate-btn-row">
+        <button class="btn btn-primary" id="translateBtn">Translate</button>
+        <button class="btn btn-ghost" id="clearBtn">Clear</button>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <div class="label">Output</div>
+        <div class="output-box" id="outputBox">Translation will appear here.</div>
+        <div class="output-meta" id="outputMeta"></div>
+      </div>
+
+      <button class="btn btn-ghost copy-btn" id="copyBtn" style="display:none;">Copy Translation</button>
+    </div>
+  </div>
+
+  <!-- Tab 2: Selected Text -->
+  <div class="tab-content" id="tab-selected">
+    <div class="section">
+      <div class="label">Selected Text from Page</div>
+      <p class="page-translate-info" style="margin-bottom: 12px;">
+        Translate text selected on the current page. Highlight any text on the webpage and click the button below.
+      </p>
+      <button class="btn btn-primary" id="translateSelectedBtn" style="width: 100%;">📋 Translate Selected Text</button>
+      <div id="selectedStatus" style="margin-top: 8px; font-size: 11px; color: var(--muted);"></div>
+
+      <div style="margin-top: 12px;">
+        <div class="label">Output</div>
+        <div class="output-box" id="selectedOutputBox">Translation will appear here.</div>
+        <div class="output-meta" id="selectedOutputMeta"></div>
+      </div>
+
+      <button class="btn btn-ghost copy-btn" id="copySelectedBtn" style="display:none;">Copy Translation</button>
+    </div>
+  </div>
+
+  <!-- Tab 3: Full Page -->
+  <div class="tab-content" id="tab-fullpage">
+    <div class="section">
+      <div class="label">Translate Full Page</div>
+      <p class="page-translate-info">
+        Selects all visible text on the current page and translates it using your chosen direction.
+        <strong>Use carefully on large pages.</strong>
+      </p>
+      <button class="btn btn-primary" id="translatePageBtn" style="width: 100%; margin-top: 12px;">
+        🌐 Translate Full Page
+      </button>
+      <div id="pageStatus" style="margin-top: 8px; font-size: 11px; color: var(--muted);"></div>
+    </div>
   </div>
 
   <!-- Footer -->
@@ -300,6 +500,32 @@
     <div class="footer-brand">ILPRL · <span>KU</span></div>
     <div class="langs-tag">
       <span>EN</span><span>NE</span><span>TMG</span>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="settings-modal" id="settingsModal">
+    <div class="settings-modal-content">
+      <div class="settings-modal-header">
+        <h2>Settings</h2>
+        <button class="settings-modal-close" id="settingsClose">✕</button>
+      </div>
+      <div class="settings-modal-body">
+        <div>
+          <div class="label">API Key</div>
+          <div class="key-input-wrapper">
+            <input class="key-input" id="apiKeySettings" type="password" placeholder="team_xxxxxxxxxxxxxxxx" />
+            <button class="eye-toggle" id="togglePassword" type="button" title="Show/Hide API Key">
+              <svg id="eyeIcon" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <button class="btn btn-primary" id="saveKeySettings" style="margin-top: 8px;">Save API Key</button>
+          <div class="key-status" id="keyStatusSettings"></div>
+        </div>
+      </div>
     </div>
   </div>
 

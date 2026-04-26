@@ -12,6 +12,16 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
+// ── Handle API key request from popup ──────────────────────
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "getApiKey") {
+    chrome.storage.local.get("apiKey", (data) => {
+      sendResponse({ apiKey: data.apiKey || null });
+    });
+    return true; // Keep channel open for async response
+  }
+});
+
 // ── Handle context menu click ───────────────────────────────
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== "tmt-translate-selection") return;
