@@ -5,7 +5,14 @@ const API_URL = "https://tmt.ilprl.ku.edu.np/lang-translate";
 
 // ── Create context menu on install ─────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
-  // Parent menu
+  // Root menu item (no text selection required)
+  chrome.contextMenus.create({
+    id: "tmt-translate-root",
+    title: "Translate with TMT",
+    contexts: ["page", "selection", "link", "image"]
+  });
+
+  // Parent menu for text selection
   chrome.contextMenus.create({
     id: "tmt-translate-selection",
     title: "Translate with TMT →",
@@ -70,6 +77,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // ── Handle context menu click ───────────────────────────────
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  // Handle root "Translate with TMT" menu item
+  if (info.menuItemId === "tmt-translate-root") {
+    // Try to open the popup, or fall back to opening in a new tab
+    try {
+      await chrome.action.openPopup();
+    } catch (err) {
+      // Fallback: open in new tab
+      chrome.tabs.create({
+        url: chrome.runtime.getURL("popup.html")
+      });
+    }
+    return;
+  }
+
   // Language combination map: menuId -> { src, tgt }
   const langMap = {
     "tmt-en-ne": { src: "en", tgt: "ne" },
