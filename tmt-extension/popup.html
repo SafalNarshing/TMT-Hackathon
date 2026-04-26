@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TMT Translator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --accent:    #00d4ff;
+      --accent2:   #f0c040;
+      --text:      #e6edf3;
+      --muted:     #7d8590;
+      --success:   #3fb950;
+      --error:     #f85149;
+      --radius:    8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 380px;
+      min-height: 480px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      font-size: 13px;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #0080ff);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      color: #fff; letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+    .header-text h1 {
+      font-size: 15px; font-weight: 700;
+      color: var(--text); line-height: 1;
+    }
+    .header-text span {
+      font-size: 10px; color: var(--accent);
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+
+    /* ── API Key Section ── */
+    .section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .label {
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .key-row { display: flex; gap: 6px; }
+    .key-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .key-input:focus { border-color: var(--accent); }
+    .key-input::placeholder { color: var(--muted); }
+
+    .btn {
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      border: none; cursor: pointer;
+      font-family: 'Sora', sans-serif;
+      font-size: 12px; font-weight: 600;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover { background: #33ddff; transform: translateY(-1px); }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    .key-status {
+      margin-top: 6px; font-size: 11px;
+      display: none;
+    }
+    .key-status.ok  { color: var(--success); display: block; }
+    .key-status.err { color: var(--error);   display: block; }
+
+    /* ── Language Selector ── */
+    .lang-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .lang-select {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      font-size: 12px;
+      padding: 8px 10px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .lang-select:focus { border-color: var(--accent); }
+    .swap-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      width: 32px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .swap-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Translate Textarea ── */
+    .translate-area {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      font-size: 13px;
+      padding: 10px 12px;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+    }
+    .translate-area:focus { border-color: var(--accent); }
+    .translate-area::placeholder { color: var(--muted); }
+
+    .translate-btn-row {
+      display: flex; gap: 8px; margin-top: 8px;
+    }
+    .translate-btn-row .btn { flex: 1; padding: 10px; }
+
+    /* ── Output ── */
+    .output-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      min-height: 60px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .output-box.loading { color: var(--muted); font-style: italic; }
+    .output-box.error   { color: var(--error); border-color: var(--error); }
+    .output-meta {
+      margin-top: 6px;
+      font-size: 10px; color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      display: flex; justify-content: space-between;
+    }
+
+    .copy-btn {
+      margin-top: 6px;
+      width: 100%;
+    }
+
+    /* ── Page Translation ── */
+    .page-translate-info {
+      font-size: 11px; color: var(--muted);
+      line-height: 1.5; margin-bottom: 10px;
+    }
+    .page-translate-info strong { color: var(--accent); }
+
+    /* ── Footer ── */
+    .footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .footer-brand {
+      font-size: 10px; color: var(--muted);
+      font-family: 'Space Mono', monospace;
+    }
+    .footer-brand span { color: var(--accent2); }
+
+    .langs-tag {
+      font-size: 10px;
+      font-family: 'Space Mono', monospace;
+      color: var(--muted);
+      display: flex; gap: 4px;
+    }
+    .langs-tag span {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 5px;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">TMT</div>
+    <div class="header-text">
+      <h1>TMT Translator</h1>
+      <span>Google TMT Hackathon 2026</span>
+    </div>
+  </div>
+
+  <!-- API Key -->
+  <div class="section">
+    <div class="label">API Key</div>
+    <div class="key-row">
+      <input class="key-input" id="apiKey" type="password" placeholder="team_xxxxxxxxxxxxxxxx" />
+      <button class="btn btn-primary" id="saveKey">Save</button>
+    </div>
+    <div class="key-status" id="keyStatus"></div>
+  </div>
+
+  <!-- Language Selection -->
+  <div class="section">
+    <div class="label">Translation Direction</div>
+    <div class="lang-row">
+      <select class="lang-select" id="srcLang">
+        <option value="en">English</option>
+        <option value="ne">Nepali (नेपाली)</option>
+        <option value="tmg">Tamang (तामाङ)</option>
+      </select>
+      <button class="swap-btn" id="swapLang" title="Swap languages">⇄</button>
+      <select class="lang-select" id="tgtLang">
+        <option value="ne">Nepali (नेपाली)</option>
+        <option value="en">English</option>
+        <option value="tmg">Tamang (तामाङ)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Manual Translation -->
+  <div class="section">
+    <div class="label">Translate Text</div>
+    <textarea class="translate-area" id="inputText" placeholder="Type or paste text to translate..."></textarea>
+    <div class="translate-btn-row">
+      <button class="btn btn-primary" id="translateBtn">Translate</button>
+      <button class="btn btn-ghost" id="clearBtn">Clear</button>
+    </div>
+
+    <div style="margin-top: 12px;">
+      <div class="label">Output</div>
+      <div class="output-box" id="outputBox">Translation will appear here.</div>
+      <div class="output-meta" id="outputMeta"></div>
+    </div>
+
+    <button class="btn btn-ghost copy-btn" id="copyBtn" style="display:none;">Copy Translation</button>
+  </div>
+
+  <!-- Page Translation -->
+  <div class="section">
+    <div class="label">Translate This Page</div>
+    <p class="page-translate-info">
+      Selects all visible text on the current page and translates it using your chosen direction.
+      <strong>Use carefully on large pages.</strong>
+    </p>
+    <button class="btn btn-ghost" id="translatePageBtn" style="width:100%">
+      🌐 Translate Page
+    </button>
+    <div id="pageStatus" style="margin-top:8px; font-size:11px; color: var(--muted);"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-brand">ILPRL · <span>KU</span></div>
+    <div class="langs-tag">
+      <span>EN</span><span>NE</span><span>TMG</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

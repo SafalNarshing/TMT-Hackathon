@@ -1,0 +1,8 @@
+/* content.css — injected into all pages by the TMT extension */
+/* Currently minimal — add page-level highlight styles here if needed */
+
+.tmt-highlight {
+  background: rgba(0, 212, 255, 0.12);
+  border-radius: 2px;
+  transition: background 0.3s;
+}
