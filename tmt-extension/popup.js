@@ -37,7 +37,6 @@ const tabBtns = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
 const themeToggleBtn = document.getElementById("themeToggle");
 const themeIcon = document.getElementById("themeIcon");
-const closePopupBtn = document.getElementById("closePopupBtn");
 
 function bindIfPresent(element, eventName, handler) {
   if (element && typeof element.addEventListener === "function") {
@@ -107,10 +106,6 @@ bindIfPresent(settingsClose, "click", () => {
 });
 
 // Keep settings modal open unless user presses the explicit close button.
-bindIfPresent(closePopupBtn, "click", () => {
-  window.close();
-});
-
 // ── Tab Navigation ──────────────────────────────────────────
 tabBtns.forEach(btn => {
   btn.addEventListener("click", () => {
