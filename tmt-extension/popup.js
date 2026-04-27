@@ -37,6 +37,13 @@ const tabBtns = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
 const themeToggleBtn = document.getElementById("themeToggle");
 const themeIcon = document.getElementById("themeIcon");
+const closePopupBtn = document.getElementById("closePopupBtn");
+
+function bindIfPresent(element, eventName, handler) {
+  if (element && typeof element.addEventListener === "function") {
+    element.addEventListener(eventName, handler);
+  }
+}
 
 // ── Theme Toggle ────────────────────────────────────────────
 function setTheme(theme) {
@@ -52,7 +59,7 @@ function setTheme(theme) {
   chrome.storage.local.set({ theme });
 }
 
-themeToggleBtn.addEventListener("click", () => {
+bindIfPresent(themeToggleBtn, "click", () => {
   const currentTheme = document.body.classList.contains("light-theme") ? "light" : "dark";
   const newTheme = currentTheme === "light" ? "dark" : "light";
   setTheme(newTheme);
@@ -81,29 +88,27 @@ async function getApiKeyFromBackground() {
 
 // ── On Load: restore saved settings ────────────────────────
 chrome.storage.local.get(["apiKey", "srcLang", "tgtLang"], (data) => {
-  if (data.apiKey) {
+  if (apiKeyInput && keyStatus && data.apiKey) {
     apiKeyInput.value = data.apiKey;
     keyStatus.textContent = "✓ API key loaded";
     keyStatus.className = "key-status ok";
   }
-  if (data.srcLang) srcLangSel.value = data.srcLang;
-  if (data.tgtLang) tgtLangSel.value = data.tgtLang;
+  if (srcLangSel && data.srcLang) srcLangSel.value = data.srcLang;
+  if (tgtLangSel && data.tgtLang) tgtLangSel.value = data.tgtLang;
 });
 
 // ── Settings Modal ──────────────────────────────────────────
-settingsBtn.addEventListener("click", () => {
+bindIfPresent(settingsBtn, "click", () => {
   settingsModal.classList.add("active");
 });
 
-settingsClose.addEventListener("click", () => {
+bindIfPresent(settingsClose, "click", () => {
   settingsModal.classList.remove("active");
 });
 
-// Close modal when clicking outside
-settingsModal.addEventListener("click", (e) => {
-  if (e.target === settingsModal) {
-    settingsModal.classList.remove("active");
-  }
+// Keep settings modal open unless user presses the explicit close button.
+bindIfPresent(closePopupBtn, "click", () => {
+  window.close();
 });
 
 // ── Tab Navigation ──────────────────────────────────────────
@@ -133,7 +138,7 @@ chrome.storage.local.get("activeTab", (data) => {
 });
 
 // ── Toggle API Key Visibility ──────────────────────────────
-togglePassword.addEventListener("click", () => {
+bindIfPresent(togglePassword, "click", () => {
   const isPassword = apiKeyInput.type === "password";
   apiKeyInput.type = isPassword ? "text" : "password";
   const eyeIcon = document.getElementById("eyeIcon");
@@ -147,7 +152,7 @@ togglePassword.addEventListener("click", () => {
   }
 });
 // ── Save API Key ────────────────────────────────────────────
-saveKeyBtn.addEventListener("click", () => {
+bindIfPresent(saveKeyBtn, "click", () => {
   const key = apiKeyInput.value.trim();
   if (!key.startsWith("team_")) {
     keyStatus.textContent = "✗ Key should start with 'team_'";
@@ -161,7 +166,7 @@ saveKeyBtn.addEventListener("click", () => {
 });
 
 // ── Swap Languages ──────────────────────────────────────────
-swapLangBtn.addEventListener("click", () => {
+bindIfPresent(swapLangBtn, "click", () => {
   const tmp = srcLangSel.value;
   srcLangSel.value = tgtLangSel.value;
   tgtLangSel.value = tmp;
@@ -169,8 +174,8 @@ swapLangBtn.addEventListener("click", () => {
 });
 
 // ── Save language preference on change ──────────────────────
-srcLangSel.addEventListener("change", saveLanguages);
-tgtLangSel.addEventListener("change", saveLanguages);
+bindIfPresent(srcLangSel, "change", saveLanguages);
+bindIfPresent(tgtLangSel, "change", saveLanguages);
 
 function saveLanguages() {
   chrome.storage.local.set({
@@ -218,7 +223,7 @@ async function translateText(text, srcLang, tgtLang, apiKey) {
 }
 
 // ── Translate Button ────────────────────────────────────────
-translateBtn.addEventListener("click", async () => {
+bindIfPresent(translateBtn, "click", async () => {
   const text = inputText.value.trim();
   if (!text) return;
 
@@ -267,7 +272,7 @@ translateBtn.addEventListener("click", async () => {
 });
 
 // ── Clear Button ────────────────────────────────────────────
-clearBtn.addEventListener("click", () => {
+bindIfPresent(clearBtn, "click", () => {
   inputText.value = "";
   outputBox.textContent = "Translation will appear here.";
   outputBox.className = "output-box";
@@ -276,7 +281,7 @@ clearBtn.addEventListener("click", () => {
 });
 
 // ── Copy Output ─────────────────────────────────────────────
-copyBtn.addEventListener("click", () => {
+bindIfPresent(copyBtn, "click", () => {
   navigator.clipboard.writeText(outputBox.textContent).then(() => {
     copyBtn.textContent = "Copied!";
     setTimeout(() => { copyBtn.textContent = "Copy Translation"; }, 1500);
@@ -284,7 +289,7 @@ copyBtn.addEventListener("click", () => {
 });
 
 // ── Translate Entire Page ───────────────────────────────────
-translatePageBtn.addEventListener("click", async () => {
+bindIfPresent(translatePageBtn, "click", async () => {
   let apiKey;
   try {
     apiKey = await getApiKeyFromBackground();
@@ -330,7 +335,7 @@ translatePageBtn.addEventListener("click", async () => {
 });
 
 // ── Copy Selected Output ────────────────────────────────────
-copySelectedBtn.addEventListener("click", () => {
+bindIfPresent(copySelectedBtn, "click", () => {
   navigator.clipboard.writeText(selectedOutputBox.textContent).then(() => {
     copySelectedBtn.textContent = "Copied!";
     setTimeout(() => { copySelectedBtn.textContent = "Copy Translation"; }, 1500);
@@ -338,7 +343,7 @@ copySelectedBtn.addEventListener("click", () => {
 });
 
 // ── Translate Selected Text ─────────────────────────────────
-translateSelectedBtn.addEventListener("click", async () => {
+bindIfPresent(translateSelectedBtn, "click", async () => {
   selectedStatus.textContent = "Getting selected text from page…";
   selectedStatus.style.color = "var(--muted)";
   selectedOutputBox.textContent = "";

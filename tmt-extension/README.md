@@ -54,6 +54,7 @@ tmt-extension/
 | **Manual text translation** | Type/paste in popup, click Translate |
 | **Full page translation** | Click "Translate Page" in popup |
 | **Right-click translation** | Select text → Right-click → "Translate with TMT" |
+| **Right-click language detection** | Select text → Right-click → "Translate with TMT" → "Detect Language with TMT" |
 | **Language swap** | Click ⇄ button |
 | **Copy output** | Click "Copy Translation" after translating |
 
@@ -63,6 +64,7 @@ tmt-extension/
 
 - Base URL: `https://tmt.ilprl.ku.edu.np/lang-translate`
 - Language codes: `en`, `ne`, `tmg`
+- Language detection uses a heuristic (parallel translation calls + script/English scoring), not a dedicated `/lang-detect` route
 - API works **sentence by sentence** — content.js splits text accordingly
 - Rate limiting: 150ms delay between sentences for large pages
 - Always check `message_type` field — HTTP status is always 200
