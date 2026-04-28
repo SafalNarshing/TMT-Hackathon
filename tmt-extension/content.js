@@ -20,18 +20,23 @@ function delay(ms) {
 
 // ── Single sentence translation call ───────────────────────
 async function translateSentence(text, srcLang, tgtLang, apiKey) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({ text, src_lang: srcLang, tgt_lang: tgtLang })
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({
+      action: "translateSentence",
+      text,
+      srcLang,
+      tgtLang,
+      apiKey
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+      } else if (response && response.success) {
+        resolve(response.output);
+      } else {
+        reject(new Error(response?.error || "Translation failed"));
+      }
+    });
   });
-
-  const data = await response.json();
-  if (data.message_type === "SUCCESS") return data.output;
-  throw new Error(data.message || "Translation failed");
 }
 
 // ── Translate a whole block of text (multi-sentence) ───────

@@ -79,6 +79,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true; // Keep channel open for async response
   }
+
+  if (request.action === "translateSentence") {
+    // Handle translation request from content.js (bypasses CORS)
+    (async () => {
+      try {
+        const { text, srcLang, tgtLang, apiKey } = request;
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({ text, src_lang: srcLang, tgt_lang: tgtLang })
+        });
+        const data = await response.json();
+        if (data.message_type === "SUCCESS") {
+          sendResponse({ success: true, output: data.output });
+        } else {
+          sendResponse({ success: false, error: data.message || "Translation failed" });
+        }
+      } catch (err) {
+        sendResponse({ success: false, error: err.message });
+      }
+    })();
+    return true;
+  }
 });
 
 // ── Handle context menu click ───────────────────────────────
