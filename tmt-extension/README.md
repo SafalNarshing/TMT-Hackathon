@@ -53,7 +53,9 @@ tmt-extension/
 |---|---|
 | **Manual text translation** | Type/paste in popup, click Translate |
 | **Full page translation** | Click "Translate Page" in popup |
-| **Right-click translation** | Select text → Right-click → "Translate with TMT" |
+| **Right-click translation** | Select text → Right-click → "Translate Selected Text" → choose language |
+| **Open translator** | Right-click on page → "Open TMT Translator" to open popup |
+| **Translate current page** | Right-click on page → "Open TMT Translator" → "Translate current page" → choose language |
 | **Language swap** | Click ⇄ button |
 | **Copy output** | Click "Copy Translation" after translating |
 
@@ -85,3 +87,20 @@ tmt-extension/
 - Nepali → Tamang
 - Tamang → English
 - Tamang → Nepali
+
+## Recommended Improvements
+To make the extension behave like a complete full-page translator (similar to Chrome Translate), the following architectural improvements are recommended:
+- Batch Translation
+    Translate multiple texts at once → faster, fewer API calls
+- Dynamic Content 
+    Use MutationObserver → translate content loaded after page load
+- Full UI Coverage 
+    Include buttons, inputs, placeholders, aria-labels → complete translation
+- Deduplication 
+    Avoid re-translating same nodes → prevents broken text
+- Caching 
+    Store repeated translations → improves speed
+- Viewport Priority 
+    Translate visible content first → better UX
+- Progressive Rendering 
+    Show translations gradually → feels faster
