@@ -7,6 +7,24 @@ const LANG_NAMES = {
   tmg: "Tamang"
 };
 
+async function readApiResponse(response) {
+  const rawBody = await response.text();
+
+  try {
+    return JSON.parse(rawBody);
+  } catch {
+    if (response.status === 429) {
+      throw new Error("Too many requests. Please wait a moment and try again.");
+    }
+
+    if (response.status >= 500) {
+      throw new Error("The translation service is temporarily unavailable. Try again later.");
+    }
+
+    throw new Error("The translation service returned an unexpected response. Please try again.");
+  }
+}
+
 // ── DOM References ──────────────────────────────────────────
 const settingsBtn      = document.getElementById("settingsBtn");
 const settingsModal    = document.getElementById("settingsModal");
@@ -207,7 +225,7 @@ async function translateText(text, srcLang, tgtLang, apiKey) {
     })
   });
 
-  const data = await response.json();
+  const data = await readApiResponse(response);
 
   // API always returns HTTP 200 — check message_type
   if (data.message_type === "SUCCESS") {

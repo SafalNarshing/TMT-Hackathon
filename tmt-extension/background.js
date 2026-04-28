@@ -3,6 +3,24 @@
 
 const API_URL = "https://tmt.ilprl.ku.edu.np/lang-translate";
 
+async function readApiResponse(response) {
+  const rawBody = await response.text();
+
+  try {
+    return JSON.parse(rawBody);
+  } catch {
+    if (response.status === 429) {
+      throw new Error("Too many requests. Please wait a moment and try again.");
+    }
+
+    if (response.status >= 500) {
+      throw new Error("The translation service is temporarily unavailable. Try again later.");
+    }
+
+    throw new Error("The translation service returned an unexpected response. Please try again.");
+  }
+}
+
 // ── Create context menu on install ─────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
   // Root menu item (no text selection required)
@@ -10,12 +28,6 @@ chrome.runtime.onInstalled.addListener(() => {
     id: "tmt-translate-root",
     title: "Translate with TMT",
     contexts: ["page", "selection", "link", "image"]
-  });
-
-  chrome.contextMenus.create({
-    id: "tmt-detect-language",
-    title: "Detect Language with TMT",
-    contexts: ["selection"]
   });
 
   // Parent menu for text selection
@@ -107,7 +119,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           },
           body: JSON.stringify({ text, src_lang: srcLang, tgt_lang: tgtLang })
         });
-        const data = await response.json();
+        const data = await readApiResponse(response);
         if (data.message_type === "SUCCESS") {
           sendResponse({ success: true, output: data.output });
         } else {
@@ -159,26 +171,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       func: (msg) => alert(msg),
       args: ["TMT Translator: Please set your API key in the extension popup first."]
     });
-    return;
-  }
-
-  if (info.menuItemId === "tmt-detect-language") {
-    try {
-      const detected = await detectLanguageViaAPI(selectedText, apiKey);
-
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: showDetectionTooltip,
-        args: [detected]
-      });
-    } catch (err) {
-      console.error("TMT language detection error:", err);
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: (msg) => alert(msg),
-        args: [`Language detection error: ${err.message}`]
-      });
-    }
     return;
   }
 
@@ -278,9 +270,8 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
   const estimatedHeight = contentLength > 320 ? 360 : contentLength > 160 ? 280 : 220;
   const anchorX = clickPosition && Number.isFinite(clickPosition.x) ? clickPosition.x : viewportWidth - 24;
   const anchorY = clickPosition && Number.isFinite(clickPosition.y) ? clickPosition.y : 24;
-  const anchorHeight = clickPosition && Number.isFinite(clickPosition.height) ? clickPosition.height : 0;
   const left = Math.max(16, Math.min(anchorX, viewportWidth - maxWidth - 16));
-  const top = Math.max(16, Math.min(anchorY + anchorHeight + 10, viewportHeight - estimatedHeight - 16));
+  const top = Math.max(16, Math.min(anchorY + 10, viewportHeight - estimatedHeight - 16));
 
   const tooltip = document.createElement("div");
   tooltip.id = "tmt-tooltip";
@@ -298,14 +289,14 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
     font-size: 13px;
     line-height: 1.55;
     border: 1px solid ${palette.border};
-    border-radius: 16px;
+    border-radius: 22px;
     overflow: visible;
-    box-shadow: 0 18px 60px rgba(0,0,0,0.45);
+    box-shadow: 0 28px 80px rgba(0,0,0,0.42), 0 8px 20px rgba(0,0,0,0.18);
     background: ${shellBackground};
   `;
 
   tooltip.innerHTML = `
-    <div id="tmt-drag-handle" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; background:${palette.surface}; border-bottom:1px solid ${palette.border}; cursor:grab; user-select:none;">
+    <div id="tmt-drag-handle" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; background:${palette.surface}; border-bottom:1px solid ${palette.border}; cursor:grab; user-select:none; border-top-left-radius:22px; border-top-right-radius:22px;">
       <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1 1 auto;">
         <div style="font-size:14px; font-weight:800; color:${palette.text}; letter-spacing:0.2px;">
           Translate
@@ -334,11 +325,11 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
         </button>
       </div>
     </div>
-    <div style="padding:14px; background:${palette.bg}; overflow:auto; max-height: calc(min(72vh, 100vh - 32px) - 58px);">
-      <div style="margin-bottom:10px; padding:10px 12px; border:1px solid ${palette.border}; border-radius:12px; background:${palette.surface}; color:${palette.muted}; font-size:12px; font-style:italic; white-space:pre-wrap; word-break:break-word;">
+    <div style="padding:14px; background:${palette.bg}; overflow:visible; max-height: calc(min(72vh, 100vh - 32px) - 58px); border-bottom-left-radius:22px; border-bottom-right-radius:22px;">
+      <div style="margin-bottom:10px; padding:10px 12px; border:1px solid ${palette.border}; border-radius:14px; background:${palette.surface}; color:${palette.muted}; font-size:12px; font-style:italic; white-space:pre-wrap; word-break:break-word;">
         ${original.slice(0, 140)}${original.length > 140 ? '…' : ''}
       </div>
-      <div id="tmt-translated-text" style="padding:14px 14px 16px; border:1px solid ${palette.border}; border-radius:12px; background:${bodySurface}; color:${palette.text}; font-size:15px; white-space:pre-wrap; word-break:break-word;">
+      <div id="tmt-translated-text" style="padding:14px 14px 16px; border:1px solid ${palette.border}; border-radius:14px; background:${bodySurface}; color:${palette.text}; font-size:15px; white-space:pre-wrap; word-break:break-word;">
         ${translated}
       </div>
       <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:${palette.muted}; font-size:11px; flex-wrap:wrap;">
@@ -450,16 +441,6 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
     }
   };
 
-  const clampToViewport = (x, y) => {
-    const rect = tooltip.getBoundingClientRect();
-    const maxLeft = Math.max(16, window.innerWidth - rect.width - 16);
-    const maxTop = Math.max(16, window.innerHeight - rect.height - 16);
-    return {
-      left: Math.max(16, Math.min(x, maxLeft)),
-      top: Math.max(16, Math.min(y, maxTop))
-    };
-  };
-
   const startDrag = (event) => {
     if (event.button !== 0 || pinned) return;
     if (event.target.closest("button, select, option, input, textarea, a, [contenteditable='true']")) return;
@@ -474,9 +455,8 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
 
   const moveDrag = (event) => {
     if (!isDragging) return;
-    const next = clampToViewport(event.clientX - dragOffsetX, event.clientY - dragOffsetY);
-    tooltip.style.left = `${next.left}px`;
-    tooltip.style.top = `${next.top}px`;
+    tooltip.style.left = `${event.clientX - dragOffsetX}px`;
+    tooltip.style.top = `${event.clientY - dragOffsetY}px`;
   };
 
   const endDrag = () => {
@@ -509,145 +489,4 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
 
   // Keep the panel open until the user closes it explicitly.
   setPinnedState();
-}
-
-function showDetectionTooltip(detectedLanguage) {
-  const existing = document.getElementById("tmt-tooltip");
-  if (existing) existing.remove();
-
-  const tooltip = document.createElement("div");
-  tooltip.id = "tmt-tooltip";
-  tooltip.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 2147483647;
-    background: #0d1117;
-    color: #e6edf3;
-    border: 1px solid #00d4ff;
-    border-radius: 10px;
-    padding: 14px 16px;
-    max-width: 320px;
-    font-family: sans-serif;
-    font-size: 13px;
-    box-shadow: 0 8px 32px rgba(0,212,255,0.15);
-    line-height: 1.5;
-  `;
-
-  tooltip.innerHTML = `
-    <div style="font-size:10px; color:#00d4ff; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">
-      TMT Language Detection
-    </div>
-    <div style="color:#e6edf3; font-size:14px;">${detectedLanguage}</div>
-    <div style="margin-top:10px; display:flex; justify-content:flex-end;">
-      <button id="tmt-close" style="
-        background:transparent; border:1px solid #30363d;
-        color:#7d8590; border-radius:6px; padding:4px 10px;
-        cursor:pointer; font-size:11px;
-      ">Close</button>
-    </div>
-  `;
-
-  document.body.appendChild(tooltip);
-
-  document.getElementById("tmt-close").addEventListener("click", () => {
-    tooltip.remove();
-  });
-
-  setTimeout(() => {
-    if (document.getElementById("tmt-tooltip")) tooltip.remove();
-  }, 8000);
-}
-
-async function safeTranslate(text, srcLang, tgtLang, apiKey) {
-  // API rejects same-language pairs, guard explicitly.
-  if (srcLang === tgtLang) return null;
-
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({ text, src_lang: srcLang, tgt_lang: tgtLang })
-  });
-
-  const data = await response.json();
-
-  return data.message_type === "SUCCESS" && typeof data.output === "string"
-    ? data.output
-    : null;
-}
-
-function scriptRatios(text) {
-  const safeLength = Math.max(text.length, 1);
-  const devanagariCount = (text.match(/[\u0900-\u097F]/g) || []).length;
-  const latinCount = (text.match(/[a-zA-Z]/g) || []).length;
-  return {
-    devanagariRatio: devanagariCount / safeLength,
-    latinRatio: latinCount / safeLength
-  };
-}
-
-function englishScore(text) {
-  if (!text || typeof text !== "string") return 0;
-
-  const COMMON_EN = ["the", "is", "are", "was", "you", "have", "this", "that", "with", "and"];
-  const safeLength = Math.max(text.length, 1);
-  const latinRatio = (text.match(/[a-zA-Z]/g) || []).length / safeLength;
-  const lower = text.toLowerCase();
-  const wordBonus = COMMON_EN.filter(word => lower.includes(word)).length;
-
-  return latinRatio + wordBonus * 0.1;
-}
-
-async function detectLanguageViaAPI(inputText, apiKey) {
-  const langNames = {
-    en: "English",
-    ne: "Nepali",
-    tmg: "Tamang"
-  };
-
-  const cleanInput = inputText.trim();
-  if (!cleanInput) return "Unknown (empty selection)";
-
-  // 2-call warm-up in parallel, as requested.
-  const [toEnFromNe, toNeFromEn] = await Promise.all([
-    safeTranslate(cleanInput, "ne", "en", apiKey),
-    safeTranslate(cleanInput, "en", "ne", apiKey)
-  ]);
-
-  const { latinRatio, devanagariRatio } = scriptRatios(cleanInput);
-
-  // Latin-heavy text is most likely English among supported languages.
-  if (latinRatio > 0.4) {
-    return langNames.en;
-  }
-
-  // If there is little to no Devanagari and not Latin-heavy, confidence is low.
-  if (devanagariRatio < 0.2) {
-    if (toEnFromNe && englishScore(toEnFromNe) > 0.45) {
-      return langNames.ne;
-    }
-    return "Ambiguous";
-  }
-
-  // Devanagari branch: disambiguate Nepali vs Tamang using English-likeness.
-  const [fromNe, fromTmg] = await Promise.all([
-    safeTranslate(cleanInput, "ne", "en", apiKey),
-    safeTranslate(cleanInput, "tmg", "en", apiKey)
-  ]);
-
-  const neScore = englishScore(fromNe);
-  const tmgScore = englishScore(fromTmg);
-
-  if (!fromNe && !fromTmg) {
-    return "Ambiguous";
-  }
-
-  if (Math.abs(neScore - tmgScore) < 0.08) {
-    return "Ambiguous";
-  }
-
-  return neScore >= tmgScore ? langNames.ne : langNames.tmg;
 }
