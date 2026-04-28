@@ -6,11 +6,27 @@ const API_URL = "https://tmt.ilprl.ku.edu.np/lang-translate";
 // ── Utility: split text into sentences ─────────────────────
 // The TMT API works sentence-by-sentence
 function splitSentences(text) {
-  // Split on sentence-ending punctuation, keeping delimiter
-  return text
-    .split(/(?<=[।.!?])\s+/)
+  // Split on sentence-ending punctuation, with fallback for older browsers
+  let sentences = [];
+  try {
+    // Try lookbehind (modern browsers)
+    sentences = text.split(/(?<=[।.!?])\s+/);
+  } catch (e) {
+    // Fallback for older browsers - split on ". " or "। "
+    sentences = text.split(/[\.\!؟\?।]\s+/);
+  }
+  return sentences
     .map(s => s.trim())
     .filter(s => s.length > 0);
+}
+
+// ── Check if element is visible ───────────────────────────
+function isElementVisible(el) {
+  if (!el) return false;
+  const style = window.getComputedStyle(el);
+  return style.display !== "none" && 
+         style.visibility !== "hidden" && 
+         style.opacity !== "0";
 }
 
 // ── Utility: delay (rate limiting) ─────────────────────────
@@ -68,11 +84,15 @@ function getTextNodes(root) {
         // Skip script/style/invisible elements
         if (!parent) return NodeFilter.FILTER_REJECT;
         const tag = parent.tagName.toLowerCase();
-        if (["script", "style", "noscript", "code", "pre"].includes(tag)) {
+        if (["script", "style", "noscript"].includes(tag)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        // Skip elements that are not visible
+        if (!isElementVisible(parent)) {
           return NodeFilter.FILTER_REJECT;
         }
         const text = node.textContent.trim();
-        if (text.length < 3) return NodeFilter.FILTER_REJECT;
+        if (text.length < 1) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
     }
@@ -84,6 +104,27 @@ function getTextNodes(root) {
     nodes.push(node);
   }
   return nodes;
+}
+
+// ── Translate element attributes that display text ────────
+async function translateElementAttributes(apiKey, srcLang, tgtLang) {
+  const attrNames = ["placeholder", "title", "alt", "aria-label"];
+  const elements = document.querySelectorAll("[placeholder], [title], [alt], [aria-label]");
+  
+  for (const el of elements) {
+    for (const attr of attrNames) {
+      const value = el.getAttribute(attr);
+      if (value && value.trim().length > 0) {
+        try {
+          const translated = await translateBlock(value, srcLang, tgtLang, apiKey);
+          el.setAttribute(attr, translated);
+          await delay(50);
+        } catch (e) {
+          // Keep original on error
+        }
+      }
+    }
+  }
 }
 
 // ── Translate the full page ─────────────────────────────────
@@ -108,6 +149,14 @@ async function translatePage(apiKey, srcLang, tgtLang) {
     done++;
     updateIndicator(`Translating… ${done}/${nodes.length}`);
     await delay(50);
+  }
+
+  // Also translate visible element attributes
+  updateIndicator(`Translating UI elements…`);
+  try {
+    await translateElementAttributes(apiKey, srcLang, tgtLang);
+  } catch (e) {
+    // Continue even if attribute translation fails
   }
 
   updateIndicator(`✓ Page translated (${nodes.length} nodes)`, true);
@@ -198,4 +247,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     translatePage(message.apiKey, message.srcLang, message.tgtLang);
     return true; // Keep message channel open
   }
+});
+
+// ── Track right-click position for context menu panels ─────
+document.addEventListener("contextmenu", (event) => {
+  const selection = window.getSelection();
+  const selectedText = selection ? selection.toString().trim() : "";
+  let selectionAnchor = null;
+
+  if (selectedText && selection && selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    if (rect && (rect.width > 0 || rect.height > 0)) {
+      selectionAnchor = {
+        x: rect.left,
+        y: rect.bottom,
+        width: rect.width,
+        height: rect.height
+      };
+    }
+  }
+
+  chrome.runtime.sendMessage({
+    action: "storeContextMenuPosition",
+    x: event.clientX,
+    y: event.clientY,
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight,
+    selectedText,
+    selectionAnchor
+  });
 });
