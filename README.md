@@ -6,8 +6,6 @@
 ## Project Structure
 
 ```
-
-```
 tmt-extension/
 ├── manifest.json     ← Extension config (Manifest V3)
 ├── popup.html        ← Extension popup UI
