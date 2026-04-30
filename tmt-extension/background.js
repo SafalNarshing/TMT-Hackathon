@@ -369,12 +369,20 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
       ">${original.slice(0, 140)}${original.length > 140 ? "…" : ""}</div>
 
       <div id="tmt-translated-text" style="
-        padding:11px 12px 13px;
+        position:relative; padding:11px 12px 13px;
         border:1px solid ${palette.border}; border-radius:9px;
         background:${bodySurface}; color:${palette.text}; font-size:15px;
         white-space:pre-wrap; word-break:break-word;
         transition:opacity 0.15s;
-      ">${translated}</div>
+      ">
+        <button id="tmt-copy-btn" title="Copy translation" style="
+          position:absolute; top:8px; right:8px; z-index:2;
+          width:45px; height:40px; border-radius:7px; border:1px solid ${palette.border};
+          background:transparent; color:${palette.muted}; cursor:pointer; display:flex;
+          align-items:center; justify-content:center; font-size:14px;
+        ">Copy</button>
+        ${translated}
+      </div>
 
       <div style="
         margin-top:9px; display:flex;
@@ -396,6 +404,8 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
   const dragHandle   = document.getElementById("tmt-drag-handle");
   const targetSelect = document.getElementById("tmt-target-select");
   const translatedEl = document.getElementById("tmt-translated-text");
+
+  const copyBtn = document.getElementById("tmt-copy-btn");
 
   let pinned = false;
   let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
@@ -427,6 +437,21 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
     document.removeEventListener("pointerdown", outsideClick, true);
   };
   document.addEventListener("pointerdown", outsideClick, true);
+
+  // Copy button handler (top-right of translated box)
+  if (copyBtn) {
+    copyBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(translatedEl.textContent || "");
+        copyBtn.textContent = "✓";
+        setTimeout(() => { copyBtn.textContent = "📋"; }, 1500);
+      } catch (err) {
+        copyBtn.textContent = "✗";
+        setTimeout(() => { copyBtn.textContent = "📋"; }, 1500);
+      }
+    });
+  }
 
   // Retranslate when dropdown changes
   targetSelect.addEventListener("change", async () => {
