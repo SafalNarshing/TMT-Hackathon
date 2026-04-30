@@ -6,6 +6,8 @@
 ## Project Structure
 
 ```
+
+```
 tmt-extension/
 ├── manifest.json     ← Extension config (Manifest V3)
 ├── popup.html        ← Extension popup UI
@@ -16,7 +18,10 @@ tmt-extension/
 └── icons/
     ├── icon16.png
     ├── icon48.png
-    └── icon128.png
+    ├──  icon128.png
+    ├── ku_logo.png
+    ├── tmt_logo_colored.png
+    └── tmt_logo.png
 ```
 
 ---
@@ -88,19 +93,31 @@ tmt-extension/
 - Tamang → English
 - Tamang → Nepali
 
-## Recommended Improvements
-To make the extension behave like a complete full-page translator (similar to Chrome Translate), the following architectural improvements are recommended:
-- Batch Translation
-    Translate multiple texts at once → faster, fewer API calls
-- Dynamic Content 
-    Use MutationObserver → translate content loaded after page load
-- Full UI Coverage 
-    Include buttons, inputs, placeholders, aria-labels → complete translation
-- Deduplication 
-    Avoid re-translating same nodes → prevents broken text
-- Caching 
-    Store repeated translations → improves speed
-- Viewport Priority 
-    Translate visible content first → better UX
-- Progressive Rendering 
-    Show translations gradually → feels faster
+---
+
+## Roadmap
+
+Full-page translation currently has partial coverage on traditional server-rendered sites (e.g. Onlinekhabar, Nepali Wikipedia) due to deeply nested, table-heavy, and opacity-hidden DOM structures.
+
+**Planned improvements:**
+
+- **Block-level translation** — walk up to the nearest block ancestor (`<p>`, `<li>`, `<td>`) and translate its full text as one unit instead of individual fragmented text nodes
+- **IntersectionObserver re-scan** — trigger a re-scan when content scrolls into view, replacing the current timed fallback passes for lazy-loaded card sections
+- **Layout-based visibility** — use `getBoundingClientRect()` to detect elements with real layout regardless of `opacity` or `transform`, catching carousel and drawer content that CSS-hides without `display: none`
+- **Devanagari-aware thresholds** — apply a shorter minimum-length filter for Devanagari script specifically, since a 2-character Nepali word can carry full meaning
+- **Stable node cache** — tag translated nodes with a `data-tmt-id` key so re-scan passes skip them instantly without relying solely on `.tmt-wrap` ancestor checks
+
+If you expect to develop locally, use the `Load unpacked` flow (Chrome) or `Load Temporary Add-on` (Firefox) to test changes while iterating.
+
+## Development
+
+- Run-time: Chrome/Chromium and Firefox (temporary add-on) are supported for local testing.
+- Manifest: This extension uses Manifest V3; `background.js` acts as the service worker.
+- To iterate on UI/logic: edit `popup.html`, `popup.js`, `content.js`, then reload the extension in the browser.
+<!-- 
+## Contributing
+
+- File an issue or open a PR against `main` with a short description of the change.
+- Don't commit real API keys. Use placeholder keys and document how to obtain real keys in issues or internal docs.
+
+Thank you for checking out TMT Translator — contributions welcome! -->
