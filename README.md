@@ -1,4 +1,4 @@
-# TMT Translator — Chrome/Firefox Extension
+# ![TMT Logo](tmt-extension/icons/tmt_logo_colored.png) TMT Translator — Chrome/Firefox Extension
 ### Google TMT Hackathon 2026 | Track 01
 
 ---
@@ -21,6 +21,22 @@ tmt-extension/
     ├── tmt_logo_colored.png
     └── tmt_logo.png
 ```
+
+---
+
+## Screenshots
+
+### Feature 1: Manual Text Translation & Language Swap
+![Screenshot: Manual Translation](tmt-extension/icons/manual_text_translation.png)
+
+### Feature 2: Full Page Translation
+![Screenshot: Full Page Translation](tmt-extension\icons\full_page_translation.png)
+
+### Feature 3: Text-Selection Translation
+![Screenshot: Right-Click Translation](tmt-extension\icons\selected_text_translation.png)
+
+### Context Menu Options
+![Screenshot: Right-Click Context Menu](tmt-extension\icons\translation_menu.png)
 
 ---
 
