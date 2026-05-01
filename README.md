@@ -1,5 +1,20 @@
-# ![TMT Logo](tmt-extension/icons/tmt_logo_colored.png) TMT Translator — Chrome/Firefox Extension
+# <img src="tmt-extension/icons/tmt_logo_colored.png" alt="TMT Logo" width="30" height="30" style="vertical-align: middle; margin-right: 8px;"> TMT Translator — Chrome/Firefox Extension
 ### Google TMT Hackathon 2026 | Track 01
+
+---
+
+## Table of Contents
+
+- [Project Structure](#project-structure)
+- [Screenshots](#screenshots)
+- [Installation](#installation)
+- [First-Time Setup](#first-time-setup)
+- [Features](#features)
+- [API Notes](#api-notes)
+- [Security](#security)
+- [Supported Translation Directions](#supported-translation-directions)
+- [Roadmap](#roadmap)
+- [Development](#development)
 
 ---
 
@@ -27,32 +42,41 @@ tmt-extension/
 ## Screenshots
 
 ### Feature 1: Manual Text Translation & Language Swap
-![Screenshot: Manual Translation](tmt-extension/icons/manual_text_translation.png)
+<img src="tmt-extension/icons/manual_text_translation.png" alt="Screenshot: Manual Translation" width="200">
 
 ### Feature 2: Full Page Translation
-![Screenshot: Full Page Translation](tmt-extension\icons\full_page_translation.png)
+<img src="tmt-extension/icons/full_page_translation.png" alt="Screenshot: Full Page Translation" width="200">
 
 ### Feature 3: Text-Selection Translation
-![Screenshot: Right-Click Translation](tmt-extension\icons\selected_text_translation.png)
+<img src="tmt-extension/icons/selected_text_translation.png" alt="Screenshot: Right-Click Translation" width="200">
 
 ### Context Menu Options
-![Screenshot: Right-Click Context Menu](tmt-extension\icons\translation_menu.png)
+<img src="tmt-extension/icons/translation_menu.png" alt="Screenshot: Right-Click Context Menu" width="200">
 
 ---
 
-## How to Load in Chrome (Developer Mode)
+## Installation
 
+To install and run the TMT Translator Extension, follow these steps
+
+```
+git clone https://github.com\SafalNarshing\TMT-Hackathon
+```
+
+### Step 2: Load in Chrome (Developer mode should be turned on first)
 1. Open Chrome and go to: `chrome://extensions`
 2. Enable **Developer mode** (top-right toggle)
 3. Click **Load unpacked**
-4. Select the `tmt-extension/` folder
+4. Select the `tmt-extension/` folder from the cloned repository
 5. The TMT Translator icon will appear in your toolbar
 
-## How to Load in Firefox
+### OR 
+
+### Step 3: How to Load in Firefox
 
 1. Go to: `about:debugging#/runtime/this-firefox`
 2. Click **Load Temporary Add-on**
-3. Select the `manifest.json` file inside `tmt-extension/`
+3. Navigate to `tmt-extension/` folder and select the `manifest.json` file
 
 ---
 
