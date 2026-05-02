@@ -1,6 +1,6 @@
 # <img src="tmt-extension/icons/tmt_logo_colored.png" alt="TMT Logo" width="30" height="30" style="vertical-align: middle; margin-right: 8px;"> TMT Translator — Chrome/Firefox Extension
 ### Google TMT Hackathon 2026 | Track 01
-
+Demo Video Link: [View Demo](https://drive.google.com/drive/folders/1JKDCXzLf5JXAWpAl8p3VFDrDXEKr7KMr?usp=sharing)
 ---
 
 ## Table of Contents
