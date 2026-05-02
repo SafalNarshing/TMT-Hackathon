@@ -116,9 +116,10 @@ git clone https://github.com\SafalNarshing\TMT-Hackathon
 
 ## Security
 
-- API key stored in `chrome.storage.local` — never exposed in code
-- Never commit your real API key to GitHub
-- Use environment variables or the extension's own secure storage
+- API key storage and usage: the API key is stored in `chrome.storage.local` and is never passed into page-executed code or content-script arguments. All authenticated requests are performed by the background service worker (`background.js`) so secrets are not leaked to web pages.
+- Do not pass secrets to `chrome.scripting.executeScript(..., args: [...])` or attach them to the page DOM/window.
+- Never commit your real API key to GitHub. Use placeholder keys for development and environment variables for CI/packaging (see `web-ext-config.cjs`).
+- Minimize host permissions: avoid `"<all_urls>"` in production `content_scripts` when possible to reduce the attack surface.
 
 ---
 
@@ -152,10 +153,4 @@ If you expect to develop locally, use the `Load unpacked` flow (Chrome) or `Load
 - Run-time: Chrome/Chromium and Firefox (temporary add-on) are supported for local testing.
 - Manifest: This extension uses Manifest V3; `background.js` acts as the service worker.
 - To iterate on UI/logic: edit `popup.html`, `popup.js`, `content.js`, then reload the extension in the browser.
-<!-- 
-## Contributing
-
-- File an issue or open a PR against `main` with a short description of the change.
-- Don't commit real API keys. Use placeholder keys and document how to obtain real keys in issues or internal docs.
-
-Thank you for checking out TMT Translator — contributions welcome! -->
+ 

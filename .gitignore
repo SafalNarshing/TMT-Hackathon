@@ -1,1 +1,4 @@
 .env
+release_files/
+.amo-upload-uuid
+web-ext-artifacts/
