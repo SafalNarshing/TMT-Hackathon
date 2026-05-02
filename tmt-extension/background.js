@@ -21,6 +21,11 @@ async function readApiResponse(response) {
   }
 }
 
+function getContextMenuStorageArea() {
+  const storageAreaName = "session" in chrome.storage ? "session" : "local";
+  return chrome.storage[storageAreaName];
+}
+
 // ── Create context menu on install ─────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
@@ -89,6 +94,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // ── Message listener ────────────────────────────────────────
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  const contextMenuStorage = getContextMenuStorageArea();
 
   if (request.action === "getApiKey") {
     chrome.storage.local.get("apiKey", (data) => {
@@ -98,7 +104,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "storeContextMenuPosition" && sender.tab?.id != null) {
-    chrome.storage.session.set({
+    contextMenuStorage.set({
       [`tmt-context-pos-${sender.tab.id}`]: {
         x: request.x,
         y: request.y,
@@ -115,21 +121,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "translateSentence") {
     (async () => {
       try {
-        const { text, srcLang, tgtLang, apiKey } = request;
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({ text, src_lang: srcLang, tgt_lang: tgtLang })
+        const { text, srcLang, tgtLang } = request;
+        // Read API key from extension storage (do not accept from page)
+        chrome.storage.local.get("apiKey", async (data) => {
+          const apiKey = data.apiKey;
+          if (!apiKey) {
+            sendResponse({ success: false, error: "No API key set" });
+            return;
+          }
+
+          try {
+            const response = await fetch(API_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+              },
+              body: JSON.stringify({ text, src_lang: srcLang, tgt_lang: tgtLang })
+            });
+            const data = await readApiResponse(response);
+            if (data.message_type === "SUCCESS") {
+              sendResponse({ success: true, output: data.output });
+            } else {
+              sendResponse({ success: false, error: data.message || "Translation failed" });
+            }
+          } catch (err) {
+            sendResponse({ success: false, error: err.message });
+          }
         });
-        const data = await readApiResponse(response);
-        if (data.message_type === "SUCCESS") {
-          sendResponse({ success: true, output: data.output });
-        } else {
-          sendResponse({ success: false, error: data.message || "Translation failed" });
-        }
       } catch (err) {
         sendResponse({ success: false, error: err.message });
       }
@@ -153,7 +172,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 
   // ── Shared: get stored settings ───────────────────────
-  const { apiKey, theme, srcLang } = await chrome.storage.local.get(["apiKey", "theme", "srcLang"]);
+  const _storage = await new Promise((resolve) => chrome.storage.local.get(["apiKey", "theme", "srcLang"], resolve));
+  const { apiKey, theme, srcLang } = _storage;
 
   if (!apiKey) {
     chrome.scripting.executeScript({
@@ -197,7 +217,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
     chrome.tabs.sendMessage(tab.id, {
       action: "translatePage",
-      apiKey,
       srcLang: src,
       tgtLang: tgt
     }, (response) => {
@@ -237,42 +256,48 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     ? { bg: "#f9f6f1", surface: "#ffffff", border: "#e5e5e5", accent: "#d97757", text: "#1d1d1d", muted: "#676767", pin: "#1a7f37" }
     : { bg: "#171717", surface: "#212121", border: "#333333", accent: "#d97757", text: "#ececec", muted: "#a0a0a0", pin: "#3fb950" };
 
-  const storedPos = tab?.id != null
-    ? (await chrome.storage.session.get(`tmt-context-pos-${tab.id}`))[`tmt-context-pos-${tab.id}`]
-    : null;
+  let storedPos = null;
+  if (tab?.id != null) {
+    const key = `tmt-context-pos-${tab.id}`;
+    const store = getContextMenuStorageArea();
+    const data = await new Promise((resolve) => store.get(key, resolve));
+    storedPos = data && data[key];
+  }
   const clickPosition = storedPos?.selectionAnchor || storedPos || null;
 
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({ text: selectedText, src_lang: src, tgt_lang: tgt })
-    });
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Background performs authenticated requests using stored key
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({ text: selectedText, src_lang: src, tgt_lang: tgt })
+      });
 
-    const data = await readApiResponse(response);
-    const translated = data.message_type === "SUCCESS" ? data.output : `Error: ${data.message}`;
+      const data = await readApiResponse(response);
+      const translated = data.message_type === "SUCCESS" ? data.output : `Error: ${data.message}`;
 
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: showTranslationTooltip,
-      args: [selectedText, translated, src, tgt, clickPosition, panelTheme, apiKey]
-    });
+      // Inject tooltip into page — do NOT pass the API key into page args
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: showTranslationTooltip,
+        args: [selectedText, translated, src, tgt, clickPosition, panelTheme]
+      });
 
-  } catch (err) {
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (msg) => alert(msg),
-      args: [`TMT Translation error: ${err.message}`]
-    });
-  }
+    } catch (err) {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (msg) => alert(msg),
+        args: [`TMT Translation error: ${err.message}`]
+      });
+    }
 
 });
 
 // ── Tooltip injected into the page ──────────────────────────
-function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPosition, theme, apiKey) {
+function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPosition, theme) {
   const existing = document.getElementById("tmt-tooltip");
   if (existing) existing.remove();
 
@@ -467,9 +492,10 @@ function showTranslationTooltip(original, translated, srcLang, tgtLang, clickPos
 
     try {
       const result = await new Promise((resolve, reject) => {
+        // Request translation from the background; do NOT include the API key here
         chrome.runtime.sendMessage({
           action: "translateSentence",
-          text: original, srcLang, tgtLang: nextTgt, apiKey
+          text: original, srcLang, tgtLang: nextTgt
         }, (res) => {
           if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
           else if (res?.success) resolve(res.output);

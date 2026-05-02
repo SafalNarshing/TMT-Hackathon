@@ -62,6 +62,19 @@ function bindIfPresent(element, eventName, handler) {
   }
 }
 
+function renderTranslationMeta(container, sourceLang, targetLang, timestamp) {
+  if (!container) return;
+
+  container.replaceChildren(
+    Object.assign(document.createElement("span"), {
+      textContent: `${LANG_NAMES[sourceLang]} → ${LANG_NAMES[targetLang]}`
+    }),
+    Object.assign(document.createElement("span"), {
+      textContent: new Date(timestamp).toLocaleTimeString()
+    })
+  );
+}
+
 // ── Theme Toggle ────────────────────────────────────────────
 function setTheme(theme) {
   if (theme === "light") {
@@ -270,10 +283,7 @@ bindIfPresent(translateBtn, "click", async () => {
     const result = await translateText(text, src, tgt, apiKey);
     outputBox.textContent = result.output;
     outputBox.className = "output-box";
-    outputMeta.innerHTML = `
-      <span>${LANG_NAMES[src]} → ${LANG_NAMES[tgt]}</span>
-      <span>${new Date(result.timestamp).toLocaleTimeString()}</span>
-    `;
+    renderTranslationMeta(outputMeta, src, tgt, result.timestamp);
     copyBtn.style.display = "block";
   } catch (err) {
     outputBox.textContent = `Error: ${err.message}`;
@@ -330,7 +340,6 @@ bindIfPresent(translatePageBtn, "click", async () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     chrome.tabs.sendMessage(tabs[0].id, {
       action: "translatePage",
-      apiKey,
       srcLang: src,
       tgtLang: tgt
     }, (response) => {
@@ -404,10 +413,7 @@ bindIfPresent(translateSelectedBtn, "click", async () => {
         const result = await translateText(selectedText, src, tgt, apiKey);
         selectedOutputBox.textContent = result.output;
         selectedOutputBox.className = "output-box";
-        selectedOutputMeta.innerHTML = `
-          <span>${LANG_NAMES[src]} → ${LANG_NAMES[tgt]}</span>
-          <span>${new Date(result.timestamp).toLocaleTimeString()}</span>
-        `;
+        renderTranslationMeta(selectedOutputMeta, src, tgt, result.timestamp);
         copySelectedBtn.style.display = "block";
         selectedStatus.textContent = "✓ Translation complete";
         selectedStatus.style.color = "var(--success)";

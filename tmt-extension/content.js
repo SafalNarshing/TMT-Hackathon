@@ -258,13 +258,13 @@ function splitByScriptRuns(text) {
 // Translation API
 // ─────────────────────────────────────────────────────────────
 
-async function translateSentence(text, srcLang, tgtLang, apiKey) {
+async function translateSentence(text, srcLang, tgtLang) {
   const cacheKey = `${srcLang}\u2192${tgtLang}:${text}`;
   if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
 
   const promise = new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
-      { action: "translateSentence", text, srcLang, tgtLang, apiKey },
+      { action: "translateSentence", text, srcLang, tgtLang },
       (response) => {
         if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
         else if (response?.success) resolve(response.output);
@@ -284,7 +284,7 @@ async function translateSentence(text, srcLang, tgtLang, apiKey) {
  * Sentences run concurrently (SENTENCE_CONCURRENCY) so a paragraph with
  * 5 sentences doesn't take 5× as long as a single sentence.
  */
-async function translateBlock(text, srcLang, tgtLang, apiKey) {
+async function translateBlock(text, srcLang, tgtLang) {
   const sentences = splitSentences(text);
   if (!sentences.length) return text;
 
@@ -295,7 +295,7 @@ async function translateBlock(text, srcLang, tgtLang, apiKey) {
     sentences.map((s, i) => async () => {
       const release = await sentAcquire();
       try {
-        results[i] = await translateSentence(s, srcLang, tgtLang, apiKey);
+        results[i] = await translateSentence(s, srcLang, tgtLang);
       } catch (e) {
         results[i] = s; // fallback to original
       } finally {
@@ -307,16 +307,16 @@ async function translateBlock(text, srcLang, tgtLang, apiKey) {
   return results.join(" ");
 }
 
-async function translateMeaningfulText(text, srcLang, tgtLang, apiKey) {
+async function translateMeaningfulText(text, srcLang, tgtLang) {
   const trimmed = text.trim();
   if (!shouldTranslate(trimmed)) return text;
-  if (!isLikelyMixedLanguage(trimmed)) return translateBlock(text, srcLang, tgtLang, apiKey);
+  if (!isLikelyMixedLanguage(trimmed)) return translateBlock(text, srcLang, tgtLang);
 
   const runs = splitByScriptRuns(text);
   const out = [];
   for (const run of runs) {
     if (!shouldTranslate(run)) { out.push(run); continue; }
-    try { out.push(await translateBlock(run, srcLang, tgtLang, apiKey)); }
+    try { out.push(await translateBlock(run, srcLang, tgtLang)); }
     catch (e) { out.push(run); }
   }
   return out.join("");
@@ -568,7 +568,7 @@ function partitionByViewport(nodes) {
 // Translate a list of nodes (concurrently, with semaphore)
 // ─────────────────────────────────────────────────────────────
 
-async function translateNodes(nodes, apiKey, srcLang, tgtLang, acquire, opts = {}) {
+async function translateNodes(nodes, srcLang, tgtLang, acquire, opts = {}) {
   const { progressCallback, relaxed = false } = opts;
   let done = 0, failed = 0;
 
@@ -582,7 +582,7 @@ async function translateNodes(nodes, apiKey, srcLang, tgtLang, acquire, opts = {
       const original = node.textContent.trim();
       if (!original || !shouldTranslate(original)) return;
 
-      const translated = await translateMeaningfulText(original, srcLang, tgtLang, apiKey);
+      const translated = await translateMeaningfulText(original, srcLang, tgtLang);
       if (translated && translated !== original) {
         wrapTextNodeWithTranslation(node, translated);
       }
@@ -605,7 +605,7 @@ async function translateNodes(nodes, apiKey, srcLang, tgtLang, acquire, opts = {
 // Translate element attributes
 // ─────────────────────────────────────────────────────────────
 
-async function translateElementAttributes(apiKey, srcLang, tgtLang) {
+async function translateElementAttributes(srcLang, tgtLang) {
   const attrMap = {
     placeholder:  "data-tmt-orig-placeholder",
     title:        "data-tmt-orig-title",
@@ -619,7 +619,7 @@ async function translateElementAttributes(apiKey, srcLang, tgtLang) {
       const value = el.getAttribute(attr);
       if (!value || !shouldTranslate(value) || el.hasAttribute(origAttr)) continue;
       try {
-        const translated = await translateMeaningfulText(value, srcLang, tgtLang, apiKey);
+        const translated = await translateMeaningfulText(value, srcLang, tgtLang);
         if (translated && translated !== value) {
           el.setAttribute(origAttr, value);
           el.setAttribute(attr, translated);
@@ -640,7 +640,7 @@ async function translateElementAttributes(apiKey, srcLang, tgtLang) {
  * TreeWalker pass can miss fragmented text nodes inside <td>/<th>.
  * This runs after the main passes as a targeted cleanup.
  */
-async function translateTables(apiKey, srcLang, tgtLang, acquire) {
+async function translateTables(srcLang, tgtLang, acquire) {
   const tables = document.querySelectorAll("table");
   if (!tables.length) return;
 
@@ -664,7 +664,7 @@ async function translateTables(apiKey, srcLang, tgtLang, acquire) {
   }
 
   if (cellNodes.length) {
-    await translateNodes(cellNodes, apiKey, srcLang, tgtLang, acquire, { relaxed: true });
+    await translateNodes(cellNodes, srcLang, tgtLang, acquire, { relaxed: true });
   }
 }
 
@@ -672,7 +672,7 @@ async function translateTables(apiKey, srcLang, tgtLang, acquire) {
 // Main translatePage  —  3-pass with idle scheduling
 // ─────────────────────────────────────────────────────────────
 
-async function translatePage(apiKey, srcLang, tgtLang) {
+async function translatePage(srcLang, tgtLang) {
   stopMutationObserver();
   translationAborted = false;
   injectStyles();
@@ -701,8 +701,8 @@ async function translatePage(apiKey, srcLang, tgtLang) {
       updateIndicator(`${label} ${done}/${total}${failStr}`);
     };
 
-    await translateNodes(visible,   apiKey, srcLang, tgtLang, acquire, { progressCallback: onProgress, relaxed });
-    await translateNodes(offscreen, apiKey, srcLang, tgtLang, acquire, {
+    await translateNodes(visible,   srcLang, tgtLang, acquire, { progressCallback: onProgress, relaxed });
+    await translateNodes(offscreen, srcLang, tgtLang, acquire, {
       progressCallback: (n, f) => {
         done = visible.length + n; totalFailed += f;
         const failStr = totalFailed > 0 ? ` · ${totalFailed} failed` : "";
@@ -723,13 +723,13 @@ async function translatePage(apiKey, srcLang, tgtLang) {
   // Attributes
   if (!translationAborted) {
     updateIndicator("Translating UI elements\u2026");
-    try { await translateElementAttributes(apiKey, srcLang, tgtLang); } catch (e) {}
+    try { await translateElementAttributes(srcLang, tgtLang); } catch (e) {}
   }
 
   // ── Table pass: dedicated cleanup for Wikipedia/news tables ──
   if (!translationAborted) {
     updateIndicator("Translating tables\u2026");
-    try { await translateTables(apiKey, srcLang, tgtLang, acquire); } catch (e) {}
+    try { await translateTables(srcLang, tgtLang, acquire); } catch (e) {}
   }
 
   // ── Pass 2: 800 ms later — catch first hydration wave ─────
@@ -763,7 +763,7 @@ async function translatePage(apiKey, srcLang, tgtLang) {
   // Run diagnostics in the background
   setTimeout(() => debugTranslationStats(), 500);
 
-  startMutationObserver(apiKey, srcLang, tgtLang);
+  startMutationObserver(srcLang, tgtLang);
 
   return count;
 }
@@ -779,7 +779,7 @@ function collectTextNodesFromNode(rootNode) {
   return getAllTextNodes(rootNode, /* relaxed */ true);
 }
 
-function startMutationObserver(apiKey, srcLang, tgtLang) {
+function startMutationObserver(srcLang, tgtLang) {
   if (mutationObserver) return;
   const acquire = makeSemaphore(CONCURRENCY_LIMIT);
 
@@ -801,7 +801,7 @@ function startMutationObserver(apiKey, srcLang, tgtLang) {
       }
     }
 
-    if (!candidates.size) return;
+      if (!candidates.size) return;
 
     clearTimeout(mutationDebounceTimer);
     // 400 ms debounce — faster reaction than v2's 600 ms
@@ -815,7 +815,7 @@ function startMutationObserver(apiKey, srcLang, tgtLang) {
         toTranslate.push(node);
       }
       if (!toTranslate.length) return;
-      await translateNodes(toTranslate, apiKey, srcLang, tgtLang, acquire, { relaxed: true });
+      await translateNodes(toTranslate, srcLang, tgtLang, acquire, { relaxed: true });
     }, 400);
   });
 
@@ -996,7 +996,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "translatePage") {
     const estimate = getAllTextNodes(document.body).length;
     sendResponse({ status: "started", count: estimate });
-    translatePage(message.apiKey, message.srcLang, message.tgtLang);
+    translatePage(message.srcLang, message.tgtLang);
     return true;
   }
 
